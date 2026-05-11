@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
 # ======================================================
 # PAGE CONFIG
@@ -27,6 +26,8 @@ st.markdown("""
     background-color: #081229;
 }
 
+/* Sidebar */
+
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #0B1F3A 0%, #102B50 100%);
     border-right: 1px solid #1E3A5F;
@@ -48,71 +49,112 @@ section[data-testid="stSidebar"] div.stButton > button:hover {
     color: white;
 }
 
+/* Titles */
+
 h1, h2, h3, h4 {
     color: white;
     font-family: 'Segoe UI';
 }
 
-.metric-card {
-    background: linear-gradient(145deg, #112D4E, #0B1F3A);
-    padding: 20px;
-    border-radius: 20px;
-    box-shadow: 0px 4px 20px rgba(0,0,0,0.3);
-    border: 1px solid #1E3A5F;
+/* KPI Cards */
+
+.kpi-card {
+    background: #EAF3FF;
+    padding: 18px;
+    border-radius: 22px;
+    border: 1px solid #D6E6FF;
+    box-shadow: 0px 4px 18px rgba(0,0,0,0.15);
+    text-align: center;
 }
+
+.kpi-title {
+    color: #1B3B6F;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.kpi-value {
+    color: #081229;
+    font-size: 32px;
+    font-weight: bold;
+}
+
+/* Chart Containers */
+
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background: #F4F8FF;
+    border-radius: 24px;
+    padding: 18px;
+    border: 1px solid #D9E6FF;
+    box-shadow: 0px 6px 20px rgba(0,0,0,0.12);
+    margin-bottom: 20px;
+}
+
+/* Insight Box */
 
 .insight-box {
-    background: #112D4E;
-    padding: 15px;
-    border-radius: 15px;
-    border-left: 5px solid #4FC3F7;
-    color: white;
-}
-.chart-card {
-    background: linear-gradient(145deg, #112D4E, #0B1F3A);
+    background: #EAF3FF;
     padding: 20px;
-    border-radius: 25px;
-    border: 1px solid #1E3A5F;
-    box-shadow: 0px 6px 18px rgba(0,0,0,0.35);
-    margin-bottom: 25px;
-    transition: 0.3s ease;
-}
-
-.chart-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0px 10px 24px rgba(0,0,0,0.45);
+    border-radius: 20px;
+    border-left: 6px solid #1B4F8C;
+    color: #081229;
+    box-shadow: 0px 4px 14px rgba(0,0,0,0.12);
 }
 
 </style>
 """, unsafe_allow_html=True)
+
 # ======================================================
-# Chart container Config
+# HELPER FUNCTIONS
 # ======================================================
-def chart_container(fig):
 
-    st.markdown('<div class="chart-card">', unsafe_allow_html=True)
+def chart_container(title, fig):
 
-    st.plotly_chart(fig, use_container_width=True)
+    with st.container(border=True):
 
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(f"### {title}")
+
+        fig.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font_color='#081229'
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True,
+            config={'displayModeBar': False}
+        )
+
+
+def kpi_card(title, value):
+
+    st.markdown(
+        f"""
+        <div class="kpi-card">
+            <div class="kpi-title">{title}</div>
+            <div class="kpi-value">{value}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
 # ======================================================
 # LOAD DATA
 # ======================================================
 
 @st.cache_data
-
 def load_data():
-    df = pd.read_excel("cleaned_hupa_diabetes_recent1.xlsb")    
-    demo = pd.read_csv('cleaned_demographics.csv')
+
+    df = pd.read_excel("cleaned_hupa_diabetes_recent1.xlsb")
+    demo = pd.read_csv("cleaned_demographics.csv")
 
     df['time'] = pd.to_datetime(df['time'])
 
-    # Merge demographics
     if 'patient_id' in demo.columns:
         df = df.merge(demo, on='patient_id', how='left')
 
     return df
-
 
 df = load_data()
 
@@ -142,6 +184,7 @@ if st.sidebar.button('🧠 Prescriptive Analytics'):
 analysis_type = st.session_state.menu
 
 patient_list = ['All Patients'] + list(df['patient_id'].unique())
+
 selected_patient = st.sidebar.selectbox(
     "Select Patient",
     patient_list
@@ -149,63 +192,6 @@ selected_patient = st.sidebar.selectbox(
 
 if selected_patient != 'All Patients':
     df = df[df['patient_id'] == selected_patient]
-
-# ======================================================
-# DATASET OVERVIEW
-# ======================================================
-
-if analysis_type == 'Dataset Overview':
-
-    st.subheader('📘 Dataset Overview')
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        st.metric('Total Patients', df['patient_id'].nunique())
-
-    with col2:
-        st.metric('Total Records', len(df))
-
-    with col3:
-        st.metric('Average Glucose', round(df['glucose'].mean(),2))
-
-    with col4:
-        st.metric('Average TIR', round(((df['glucose'].between(70,180)).mean()*100),2))
-
-    # Demographics charts
-    if 'gender' in df.columns:
-
-        gender_chart = px.pie(
-            df,
-            names='gender',
-            title='Gender Distribution',
-            template='plotly_dark'
-        )
-
-        st.plotly_chart(gender_chart, use_container_width=True)
-
-    if 'age' in df.columns:
-
-        age_chart = px.histogram(
-            df,
-            x='age',
-            nbins=20,
-            title='Age Distribution',
-            template='plotly_dark'
-        )
-
-        st.plotly_chart(age_chart, use_container_width=True)
-
-    overview_chart = px.line(
-        df,
-        x='time',
-        y='glucose',
-        color='patient_id',
-        title='Overall Glucose Trends Across Patients',
-        template='plotly_dark'
-    )
-
-    st.plotly_chart(overview_chart, use_container_width=True)
 
 # ======================================================
 # HEADER
@@ -218,92 +204,133 @@ st.markdown("### HUPA-UCM Continuous Glucose Monitoring Analytics")
 # KPI SECTION
 # ======================================================
 
-col1, col2, col3, col4 = st.columns(4)
-
 avg_glucose = round(df['glucose'].mean(), 2)
 max_glucose = round(df['glucose'].max(), 2)
 min_glucose = round(df['glucose'].min(), 2)
 avg_steps = round(df['steps'].mean(), 0)
 
+col1, col2, col3, col4 = st.columns(4)
+
 with col1:
-    st.metric("Average Glucose", avg_glucose)
+    kpi_card("Average Glucose", avg_glucose)
 
 with col2:
-    st.metric("Maximum Glucose", max_glucose)
+    kpi_card("Maximum Glucose", max_glucose)
 
 with col3:
-    st.metric("Minimum Glucose", min_glucose)
+    kpi_card("Minimum Glucose", min_glucose)
 
 with col4:
-    st.metric("Average Steps", avg_steps)
+    kpi_card("Average Steps", avg_steps)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# ======================================================
+# DATASET OVERVIEW
+# ======================================================
+
+if analysis_type == 'Dataset Overview':
+
+    st.subheader("📘 Dataset Overview")
+
+    col1, col2 = st.columns(2)
+
+    if 'gender' in df.columns:
+
+        gender_chart = px.pie(
+            df,
+            names='gender',
+            template='plotly_white'
+        )
+
+        with col1:
+            chart_container("👥 Gender Distribution", gender_chart)
+
+    if 'age' in df.columns:
+
+        age_chart = px.histogram(
+            df,
+            x='age',
+            nbins=20,
+            template='plotly_white'
+        )
+
+        with col2:
+            chart_container("📈 Age Distribution", age_chart)
+
+    overview_chart = px.line(
+        df,
+        x='time',
+        y='glucose',
+        color='patient_id',
+        template='plotly_white'
+    )
+
+    chart_container(
+        "📊 Overall Glucose Trends Across Patients",
+        overview_chart
+    )
 
 # ======================================================
 # DESCRIPTIVE ANALYTICS
 # ======================================================
 
-if analysis_type == "Descriptive Analytics":
+elif analysis_type == "Descriptive Analytics":
 
     st.subheader("📊 Descriptive Analytics Dashboard")
 
-   
-    # --------------------------------------------------
-    # TIME IN RANGE
-    # --------------------------------------------------
-  
-    tir = ((df['glucose'] >= 70) & (df['glucose'] <= 180)).mean() * 100
+    tir = ((df['glucose'] >= 70) &
+           (df['glucose'] <= 180)).mean() * 100
 
     fig_tir = go.Figure(go.Indicator(
-        mode = "gauge+number",
-        value = tir,
-        title = {'text': "Time In Range (%)"},
-        gauge = {
+        mode="gauge+number",
+        value=tir,
+        title={'text': "Time In Range (%)"},
+        gauge={
             'axis': {'range': [0, 100]},
-            'bar': {'color': "#00D4FF"},
-            'steps': [
-                {'range': [0, 50], 'color': '#7f1d1d'},
-                {'range': [50, 70], 'color': '#78350f'},
-                {'range': [70, 100], 'color': '#14532d'}
-            ]
+            'bar': {'color': "#1B4F8C"}
         }
     ))
 
-    chart_container(fig_tir)
-
-    # --------------------------------------------------
-    # 24-HOUR GLUCOSE TREND
-    # --------------------------------------------------
+    chart_container("🎯 Time In Range", fig_tir)
 
     fig_glucose = px.line(
         df,
         x='time',
         y='glucose',
-        title='24-Hour Glucose Trend',
-        template='plotly_dark'
+        template='plotly_white'
     )
 
-    fig_glucose.add_hline(y=70, line_dash='dash', line_color='red')
-    fig_glucose.add_hline(y=180, line_dash='dash', line_color='orange')
-    chart_container(fig_glucose)
-    # --------------------------------------------------
-    # HYPOGLYCEMIA ANALYSIS
-    # --------------------------------------------------
-    
+    fig_glucose.add_hline(
+        y=70,
+        line_dash='dash',
+        line_color='red'
+    )
+
+    fig_glucose.add_hline(
+        y=180,
+        line_dash='dash',
+        line_color='orange'
+    )
+
+    chart_container(
+        "📈 24-Hour Glucose Trend",
+        fig_glucose
+    )
+
     hypo = df[df['glucose'] < 70]
 
     fig_hypo = px.histogram(
         hypo,
         x='glucose',
         nbins=20,
-        title='Hypoglycemic Frequency Distribution',
-        template='plotly_dark'
+        template='plotly_white'
     )
 
-    chart_container(fig_hypo)
-   
-
-    # --------------------------------------------------
-    # HEART RATE VS ROC
-    # --------------------------------------------------
+    chart_container(
+        "⚠️ Hypoglycemia Frequency",
+        fig_hypo
+    )
 
     fig_hr = px.scatter(
         df,
@@ -311,12 +338,13 @@ if analysis_type == "Descriptive Analytics":
         y='glucose_roc',
         color='glucose',
         size='steps',
-        title='Heart Rate vs Glucose Rate of Change',
-        template='plotly_dark',
-        hover_data=['patient_id', 'glucose']
+        template='plotly_white'
     )
 
-    st.plotly_chart(fig_hr, use_container_width=True)
+    chart_container(
+        "❤️ Heart Rate vs Glucose ROC",
+        fig_hr
+    )
 
 # ======================================================
 # PREDICTIVE ANALYTICS
@@ -325,10 +353,6 @@ if analysis_type == "Descriptive Analytics":
 elif analysis_type == "Predictive Analytics":
 
     st.subheader("🤖 Predictive Analytics Dashboard")
-
-    # --------------------------------------------------
-    # HYPOGLYCEMIA RISK SCORE
-    # --------------------------------------------------
 
     df['risk_score'] = (
         abs(df['glucose_roc']) * 0.4 +
@@ -340,15 +364,13 @@ elif analysis_type == "Predictive Analytics":
         df,
         x='time',
         y='risk_score',
-        title='Predicted Hypoglycemia Risk Trend',
-        template='plotly_dark'
+        template='plotly_white'
     )
 
-    st.plotly_chart(fig_risk, use_container_width=True)
-
-    # --------------------------------------------------
-    # HIGH VARIABILITY DAY PREDICTION
-    # --------------------------------------------------
+    chart_container(
+        "🚨 Predicted Hypoglycemia Risk",
+        fig_risk
+    )
 
     fig_var = px.scatter(
         df,
@@ -356,28 +378,13 @@ elif analysis_type == "Predictive Analytics":
         y='glucose',
         color='steps',
         size='heart_rate',
-        title='Glucose Variability Prediction',
-        template='plotly_dark'
+        template='plotly_white'
     )
 
-    st.plotly_chart(fig_var, use_container_width=True)
-
-    # --------------------------------------------------
-    # MORNING GLUCOSE PREDICTION
-    # --------------------------------------------------
-
-    morning = df[df['hour'].between(5,10)]
-
-    fig_morning = px.box(
-        morning,
-        x='hour',
-        y='glucose',
-        color='hour',
-        title='Morning Glucose Pattern Analysis',
-        template='plotly_dark'
+    chart_container(
+        "📊 Glucose Variability Prediction",
+        fig_var
     )
-
-    st.plotly_chart(fig_morning, use_container_width=True)
 
 # ======================================================
 # PRESCRIPTIVE ANALYTICS
@@ -386,10 +393,6 @@ elif analysis_type == "Predictive Analytics":
 elif analysis_type == "Prescriptive Analytics":
 
     st.subheader("🧠 Prescriptive Intervention Dashboard")
-
-    # --------------------------------------------------
-    # GLUCOSE VARIABILITY INTERVENTION
-    # --------------------------------------------------
 
     df['Risk_Level'] = np.where(
         df['glucose_rolling_std_1h'] > 30,
@@ -403,9 +406,7 @@ elif analysis_type == "Prescriptive Analytics":
         y='glucose_rolling_std_1h',
         color='Risk_Level',
         size='glucose',
-        title='Glucose Variability Risk Intervention',
-        template='plotly_dark',
-        hover_data=['patient_id', 'steps', 'carb_input']
+        template='plotly_white'
     )
 
     fig_intervention.add_hline(
@@ -414,11 +415,10 @@ elif analysis_type == "Prescriptive Analytics":
         line_color='red'
     )
 
-    st.plotly_chart(fig_intervention, use_container_width=True)
-
-    # --------------------------------------------------
-    # ACTIVITY VS INSULIN
-    # --------------------------------------------------
+    chart_container(
+        "🚨 Glucose Variability Intervention",
+        fig_intervention
+    )
 
     fig_activity = px.scatter(
         df,
@@ -426,77 +426,37 @@ elif analysis_type == "Prescriptive Analytics":
         y='basal_rate',
         color='glucose',
         size='steps',
-        trendline='lowess',
-        title='Physical Activity vs Insulin Requirement',
-        template='plotly_dark'
+        template='plotly_white'
     )
 
-    st.plotly_chart(fig_activity, use_container_width=True)
-
-    # --------------------------------------------------
-    # CARB TREATMENT HEATMAP
-    # --------------------------------------------------
-
-    hypo = df[df['glucose'] < 70].copy()
-
-    hypo['Recovery_Status'] = np.where(
-        hypo['glucose_roc'] > 3,
-        'Rebound Hyperglycemia',
-        'Safe Recovery'
+    chart_container(
+        "🏃 Activity vs Insulin Requirement",
+        fig_activity
     )
-
-    hypo['carb_bin'] = pd.cut(
-        hypo['carb_input'],
-        bins=[0,5,10,15,20,30,50]
-    ).astype(str)
-
-    heat = hypo.groupby(
-        ['carb_bin', 'Recovery_Status'],
-        observed=False
-    ).size().reset_index(name='count')
-
-    fig_heat = px.density_heatmap(
-        heat,
-        x='carb_bin',
-        y='Recovery_Status',
-        z='count',
-        text_auto=True,
-        title='Optimal Carb Intake for Hypoglycemia Recovery',
-        template='plotly_dark'
-    )
-
-    st.plotly_chart(fig_heat, use_container_width=True)
-
-    # --------------------------------------------------
-    # AI INTERVENTION ENGINE
-    # --------------------------------------------------
-
-    st.markdown("## 🚨 AI Intervention Recommendations")
-
-    if df['glucose_rolling_std_1h'].mean() > 30:
-        st.error("High glucose variability detected. Recommend insulin reassessment and activity intervention.")
-
-    if df['glucose'].max() > 250:
-        st.warning("Severe hyperglycemia risk detected. Increase glucose monitoring frequency.")
-
-    if df['glucose'].min() < 60:
-        st.info("Hypoglycemia intervention recommended. Monitor carb correction strategy.")
 
 # ======================================================
-# INSIGHT PANEL
+# INSIGHTS PANEL
 # ======================================================
 
 st.markdown("---")
+
 st.subheader("📌 Clinical Insights")
 
 st.markdown("""
 <div class='insight-box'>
+
 <b>Key Clinical Findings:</b><br><br>
+
 • Increased glucose variability strongly predicts future glycemic instability.<br><br>
+
 • Moderate physical activity improves insulin sensitivity and reduces glucose fluctuations.<br><br>
+
 • High carbohydrate meals significantly increase post-meal glucose excursions.<br><br>
-• Sleep duration between 7–8 hours is associated with improved Time-In-Range.<br><br>
-• Early predictive alerts can reduce severe hypoglycemia risk through proactive intervention.
+
+• Sleep duration between 7–8 hours improves Time-In-Range.<br><br>
+
+• Predictive alerts enable proactive intervention and reduce severe hypoglycemia risk.
+
 </div>
 """, unsafe_allow_html=True)
 
@@ -505,4 +465,7 @@ st.markdown("""
 # ======================================================
 
 st.markdown("---")
-st.caption("Developed for HUPA-UCM Diabetes Intelligence Analytics | PyCore Python Hackathon 2026")
+
+st.caption(
+    "Developed for HUPA-UCM Diabetes Intelligence Analytics | PyCore Python Hackathon 2026"
+)
