@@ -399,7 +399,7 @@ elif analysis_type == "Prescriptive Analytics":
 
     fig_activity = px.scatter(
         df,
-        x='calories_burned',
+        x='calories',
         y='basal_rate',
         color='glucose',
         size='steps',
