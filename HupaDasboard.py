@@ -85,7 +85,16 @@ h1, h2, h3, h4 {
 
 </style>
 """, unsafe_allow_html=True)
+# ======================================================
+# Chart container Config
+# ======================================================
+def chart_container(fig):
 
+    st.markdown('<div class="chart-card">', unsafe_allow_html=True)
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
 # ======================================================
 # LOAD DATA
 # ======================================================
@@ -236,17 +245,12 @@ if analysis_type == "Descriptive Analytics":
 
     st.subheader("📊 Descriptive Analytics Dashboard")
 
-    col1, col2 = st.columns(2)
-
-
-
+   
     # --------------------------------------------------
     # TIME IN RANGE
     # --------------------------------------------------
-    with col1:
-    st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-
-    s tir = ((df['glucose'] >= 70) & (df['glucose'] <= 180)).mean() * 100
+  
+    tir = ((df['glucose'] >= 70) & (df['glucose'] <= 180)).mean() * 100
 
     fig_tir = go.Figure(go.Indicator(
         mode = "gauge+number",
@@ -263,12 +267,7 @@ if analysis_type == "Descriptive Analytics":
         }
     ))
 
-    st.plotly_chart(fig_tir, use_container_width=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-
-   
+    chart_container(fig_tir)
 
     # --------------------------------------------------
     # 24-HOUR GLUCOSE TREND
@@ -284,15 +283,11 @@ if analysis_type == "Descriptive Analytics":
 
     fig_glucose.add_hline(y=70, line_dash='dash', line_color='red')
     fig_glucose.add_hline(y=180, line_dash='dash', line_color='orange')
-
-    st.plotly_chart(fig_glucose, use_container_width=True)
-
+    chart_container(fig_glucose)
     # --------------------------------------------------
     # HYPOGLYCEMIA ANALYSIS
     # --------------------------------------------------
-    with col2:
-    st.markdown('<div class="chart-card">', unsafe_allow_html=True)
-
+    
     hypo = df[df['glucose'] < 70]
 
     fig_hypo = px.histogram(
@@ -303,10 +298,7 @@ if analysis_type == "Descriptive Analytics":
         template='plotly_dark'
     )
 
-    st.plotly_chart(fig_hypo, use_container_width=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
+    chart_container(fig_hypo)
    
 
     # --------------------------------------------------
