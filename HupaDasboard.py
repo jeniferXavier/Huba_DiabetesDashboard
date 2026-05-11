@@ -68,6 +68,20 @@ h1, h2, h3, h4 {
     border-left: 5px solid #4FC3F7;
     color: white;
 }
+.chart-card {
+    background: linear-gradient(145deg, #112D4E, #0B1F3A);
+    padding: 20px;
+    border-radius: 25px;
+    border: 1px solid #1E3A5F;
+    box-shadow: 0px 6px 18px rgba(0,0,0,0.35);
+    margin-bottom: 25px;
+    transition: 0.3s ease;
+}
+
+.chart-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0px 10px 24px rgba(0,0,0,0.45);
+}
 
 </style>
 """, unsafe_allow_html=True)
@@ -150,11 +164,11 @@ if analysis_type == 'Dataset Overview':
         st.metric('Average TIR', round(((df['glucose'].between(70,180)).mean()*100),2))
 
     # Demographics charts
-    if 'sex' in df.columns:
+    if 'gender' in df.columns:
 
         gender_chart = px.pie(
             df,
-            names='sex',
+            names='gender',
             title='Gender Distribution',
             template='plotly_dark'
         )
@@ -222,11 +236,17 @@ if analysis_type == "Descriptive Analytics":
 
     st.subheader("📊 Descriptive Analytics Dashboard")
 
+    col1, col2 = st.columns(2)
+
+
+
     # --------------------------------------------------
     # TIME IN RANGE
     # --------------------------------------------------
+    with col1:
+    st.markdown('<div class="chart-card">', unsafe_allow_html=True)
 
-    tir = ((df['glucose'] >= 70) & (df['glucose'] <= 180)).mean() * 100
+    s tir = ((df['glucose'] >= 70) & (df['glucose'] <= 180)).mean() * 100
 
     fig_tir = go.Figure(go.Indicator(
         mode = "gauge+number",
@@ -244,6 +264,11 @@ if analysis_type == "Descriptive Analytics":
     ))
 
     st.plotly_chart(fig_tir, use_container_width=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
+   
 
     # --------------------------------------------------
     # 24-HOUR GLUCOSE TREND
@@ -265,6 +290,8 @@ if analysis_type == "Descriptive Analytics":
     # --------------------------------------------------
     # HYPOGLYCEMIA ANALYSIS
     # --------------------------------------------------
+    with col2:
+    st.markdown('<div class="chart-card">', unsafe_allow_html=True)
 
     hypo = df[df['glucose'] < 70]
 
@@ -277,6 +304,10 @@ if analysis_type == "Descriptive Analytics":
     )
 
     st.plotly_chart(fig_hypo, use_container_width=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+   
 
     # --------------------------------------------------
     # HEART RATE VS ROC
